@@ -1,0 +1,37 @@
+name: Claude Updates Bot
+
+on:
+  schedule:
+    # 매 30분마다 실행 (UTC 기준)
+    - cron: "*/30 * * * *"
+  workflow_dispatch: # 수동 실행 가능
+
+jobs:
+  check-updates:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run bot
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python claude_updates_bot.py
+
+      - name: Save seen entries
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add seen_entries.json
+          git diff --staged --quiet || git commit -m "chore: update seen entries"
+          git push
